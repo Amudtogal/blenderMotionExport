@@ -1,4 +1,4 @@
-# Blender Motion Tracking Addon 0.9
+# Blender Motion Tracking Addon 1.0
 # © Simon Reichel 21.05.2016
 
 bl_info = {
