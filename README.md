@@ -41,3 +41,5 @@ There is a bunch of things to do:
 - Adding a tutorial video to explain all the possibilities of Blender motion tracking and usage of the script
 - Adding merge functionality to allow export of multiple markers into one file
 - Improvements of the inner layout and cleanup of the code
+- Automatically set the end frame according to imported video
+- Introduce angle and speed calculation
