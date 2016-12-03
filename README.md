@@ -1,4 +1,4 @@
-# Blender-Motion-Export-Addon
+# Blender Motion Tracking Export Plugin
 Export addon for scientific use of Blender motion tracking data.
 The digital 3D software suite Blender is published under GPL and provides a bunch of powerful tools for modelling, animation and movie editing (see https://www.blender.org/features/ for more information).
 The motion tracking system of Blender is very sophisticated and still every version improvements for the algorithms are included.
