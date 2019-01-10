@@ -115,7 +115,6 @@ class ExportMarkerPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-
         col = layout.column(align=True)
         row = col.row(align=True)
         row.operator("clip.add_marker_at_click", text="Add")
@@ -123,7 +122,7 @@ class ExportMarkerPanel(bpy.types.Panel):
         col.separator()
         sc = context.space_data
         clip = sc.clip
-        if clip:
+        if clip and clip.tracking.tracks.active:
             col.prop(clip.tracking.tracks.active, "name")
 
 class ExportTrackingPanel(bpy.types.Panel):
