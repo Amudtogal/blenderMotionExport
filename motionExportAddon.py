@@ -191,7 +191,7 @@ class ExportDataPanel(bpy.types.Panel):
     bpy.types.Scene.exp_path = StringProperty(
         name = "Export Path",
         description = "Path where data will be exported to",
-        default = bpy.data.filepath.rpartition("\\")[0] + "\\export",
+        default = "..",
         subtype = 'DIR_PATH')
     bpy.types.Scene.exp_subdirs = BoolProperty(
         name = "Export Subdirectories",
