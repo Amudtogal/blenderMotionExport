@@ -106,6 +106,23 @@ class ExportOperator(bpy.types.Operator):
 
         return {"FINISHED"}
 
+class FullClipRangeOperator(bpy.types.Operator):
+    """Select the whole frame range of the current clip"""
+    bl_idname = "scene.fullcliprange"
+    bl_label = "All frames"
+
+    def execute(self, context):
+        clip = bpy.data.movieclips[context.space_data.clip.name]
+
+        context.scene.frame_start = clip.frame_start
+        context.scene.frame_end = clip.frame_start + clip.frame_duration
+
+        return {'FINISHED'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.clip
+
 class ExportMarkerPanel(bpy.types.Panel):
     bl_label = "Marker"
     bl_space_type = 'CLIP_EDITOR'
@@ -214,8 +231,9 @@ class ExportDataPanel(bpy.types.Panel):
         col.separator()
         col.prop(context.scene, "frame_start")
         col.prop(context.scene, "frame_end")
+        col.operator("scene.fullcliprange")
         col.separator()
-        col.label("Export:")
+        col.label("Export markers:")
         row = col.row(align = True)
         row.operator("scene.export_marker",
             text = "Selected").selected_only = True
@@ -224,12 +242,14 @@ class ExportDataPanel(bpy.types.Panel):
 
 def register():
     bpy.utils.register_class(ExportOperator)
+    bpy.utils.register_class(FullClipRangeOperator)
     bpy.utils.register_class(ExportMarkerPanel)
     bpy.utils.register_class(ExportTrackingPanel)
     bpy.utils.register_class(ExportDataPanel)
 
 def unregister():
     bpy.utils.unregister_class(ExportOperator)
+    bpy.utils.unregister_class(FullClipRangeOperator)
     bpy.utils.unregister_class(ExportMarkerPanel)
     bpy.utils.unregister_class(ExportTrackingPanel)
     bpy.utils.unregister_class(ExportDataPanel)
