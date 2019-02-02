@@ -7,6 +7,7 @@ bl_info = {
 }
 
 import bpy, os
+import numpy as np
 from bpy.props import BoolProperty as BoolProperty
 from bpy.props import StringProperty as StringProperty
 
@@ -123,6 +124,7 @@ class FullClipRangeOperator(bpy.types.Operator):
     def poll(cls, context):
         return context.space_data.clip
 
+
 class ExportMarkerPanel(bpy.types.Panel):
     bl_label = "Marker"
     bl_space_type = 'CLIP_EDITOR'
@@ -141,6 +143,31 @@ class ExportMarkerPanel(bpy.types.Panel):
         clip = sc.clip
         if clip and clip.tracking.tracks.active:
             col.prop(clip.tracking.tracks.active, "name")
+
+        selected = []
+        tracks = clip.tracking.tracks
+        for track in tracks:
+            if track.select:
+                selected.append(track)
+
+        col.separator()
+        # display marker distance as label
+        if len(selected) == 2 and tracks.active:
+            active_marker = selected[0] if tracks.active is selected[0] else selected[1]
+            other_marker = selected[1] if tracks.active is selected[0] else selected[0]
+
+            x_size = clip.size[0]
+            y_size = clip.size[1]
+            active_marker = active_marker.markers.find_frame(context.scene.frame_current)
+            other_marker = other_marker.markers.find_frame(context.scene.frame_current)
+            x = (active_marker.co.x - other_marker.co.x) * x_size
+            y = (active_marker.co.y - other_marker.co.y) * x_size
+            fulldistance = np.sqrt(x ** 2 + y ** 2)
+            col.label("Marker distance:")
+            col.label("{0:.2f} ({1:.2f}, {2:.2f})".format(fulldistance, x, y))
+        else:
+            col.label("Select two markers to show distance.")
+
 
 class ExportTrackingPanel(bpy.types.Panel):
     bl_space_type = 'CLIP_EDITOR'
