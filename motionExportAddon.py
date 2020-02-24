@@ -1,51 +1,30 @@
-# Blender Motion Tracking Addon 1.0
-# © Simon Reichel 17.11.2017
+#!/usr/bin/python
+
+# Blender Motion Tracking Addon 1.1
+# © Simon Reichel 24/02/2020
+
+import os
+import numpy as np
+import bpy
+from bpy.props import BoolProperty as BoolProperty
+from bpy.props import StringProperty as StringProperty
 
 bl_info = {
     "name": "Export Motion Tracking Data",
     "category": "Import-Export",
     "description": "Use motion tracking data for scientific projects.",
     "author": "Simon Reichel",
-    "version": (1, 0, 0),
+    "version": (1, 1, 0),
     "blender": (2, 79, 0),
-    "location": "Phobos adds a number of custom tool panels.",
+    "location": "This addon adds a new tab to the movie clip editor.",
     "warning": "",
     "wiki_url": "",
     "support": "COMMUNITY",
     "tracker_url": "https://github.com/BiYonic/blenderMotionExport/issues",
 }
 
-import bpy, os
-from bpy.props import BoolProperty as BoolProperty
-from bpy.props import StringProperty as StringProperty
-from bpy.types import Menu
 
-class InitialisationPanel(bpy.types.Panel):
-    """Contains all tools to initialise video loading, proxies and color
-    settings"""
-    bl_label = "Initialisation"
-    bl_space_type = 'CLIP_EDITOR'
-    bl_region_type = 'TOOLS'
-    bl_category = "Tracking and Export"
-
-    def draw(self, context):
-        layout = self.layout
-        sc = context.space_data
-
-        layout.template_movieclip(sc, 'clip', compact=True)
-
-        layout.template_movieclip_information(sc, 'clip', sc.clip_user)
-
-
-class CLIP_MT_tracking_settings_presets(Menu):
-    """Predefined tracking settings"""
-    bl_label = "Tracking Presets"
-    preset_subdir = "tracking_settings"
-    preset_operator = "script.execute_preset"
-    draw = Menu.draw_preset
-
-
-class MarkerPanel(bpy.types.Panel):
+class ExportMarkerPanel(bpy.types.Panel):
     bl_label = "Marker"
     bl_space_type = 'CLIP_EDITOR'
     bl_region_type = 'TOOLS'
@@ -55,7 +34,6 @@ class MarkerPanel(bpy.types.Panel):
         layout = self.layout
         sc = context.space_data
         clip = sc.clip
-        settings = clip.tracking.settings
 
         col = layout.column(align=True)
         row = col.row(align=True)
@@ -64,99 +42,30 @@ class MarkerPanel(bpy.types.Panel):
         col.separator()
         if clip.tracking.tracks.active:
             col.prop(clip.tracking.tracks.active, 'name')
-            marker = clip.tracking.tracks.active
+
+        selected = []
+        tracks = clip.tracking.tracks
+        for track in tracks:
+            if track.select:
+                selected.append(track)
 
         col.separator()
-        row = col.row(align=True)
+        # display marker distance as label
+        if len(selected) == 2 and tracks.active:
+            active_marker = selected[0] if tracks.active is selected[0] else selected[1]
+            other_marker = selected[1] if tracks.active is selected[0] else selected[0]
 
-        label = CLIP_MT_tracking_settings_presets.bl_label
-        row.menu('CLIP_MT_tracking_settings_presets', text=label)
-        row.operator("clip.tracking_settings_preset_add",
-                    text="", icon='ZOOMIN')
-        row.operator("clip.tracking_settings_preset_add",
-                    text="", icon='ZOOMOUT').remove_active = True
-
-        if clip.tracking.tracks.active and clip.tracking.tracks.active.select:
-            # TODO make this button large
-            col.operator("clip.track_settings_as_default",
-                        text="Make default setting")
-
-            col.separator()
-
-            box = layout.box()
-            row = box.row(align=True)
-            row.prop(settings, "show_extra_expanded", text="", emboss=False)
-            row.label(text="Tracking settings")
-
-            if settings.show_extra_expanded:
-                row = box.row(align=True)
-                row.prop(marker, "use_red_channel", text="R", toggle=True)
-                row.prop(marker, "use_green_channel", text="G", toggle=True)
-                row.prop(marker, "use_blue_channel", text="B", toggle=True)
-
-                box.separator()
-
-                box.prop(marker, "motion_model")
-
-                row = box.row(align=True)
-                row.label(text="Match:")
-                row.prop(marker, "pattern_match", text="")
-
-                row = box.row(align=True)
-                row.prop(marker, "use_brute")
-                row.prop(marker, "use_normalization")
-
-                col.separator()
-
-                col = box.column()
-                row = col.row()
-                row.prop(marker, "use_mask")
-
-                sub = col.column(align=True)
-                sub.prop(marker, "correlation_min")
-                sub.prop(marker, "frames_limit")
-                sub.prop(marker, "margin")
+            x_size = clip.size[0]
+            y_size = clip.size[1]
+            active_marker = active_marker.markers.find_frame(context.scene.frame_current)
+            other_marker = other_marker.markers.find_frame(context.scene.frame_current)
+            x = (active_marker.co.x - other_marker.co.x) * x_size
+            y = (active_marker.co.y - other_marker.co.y) * y_size
+            fulldistance = np.sqrt(x ** 2 + y ** 2)
+            col.label("Marker distance:")
+            col.label("{0:.2f} ({1:.2f}, {2:.2f})".format(fulldistance, x, y))
         else:
-            box = layout.box()
-            row = box.row(align=True)
-            row.prop(settings, "show_default_expanded", text="", emboss=False)
-            row.label(text="Tracking settings")
-
-            if settings.show_default_expanded:
-                row = box.row(align=True)
-                row.prop(settings, "use_default_red_channel",
-                        text="R", toggle=True)
-                row.prop(settings, "use_default_green_channel",
-                        text="G", toggle=True)
-                row.prop(settings, "use_default_blue_channel",
-                        text="B", toggle=True)
-
-                box.separator()
-
-                sub = box.column(align=True)
-                sub.prop(settings, "default_pattern_size")
-                sub.prop(settings, "default_search_size")
-
-                box.prop(settings, "default_motion_model")
-
-                row = box.row(align=True)
-                row.label(text="Match:")
-                row.prop(settings, "default_pattern_match", text="")
-
-                row = box.row(align=True)
-                row.prop(settings, "use_default_brute")
-                row.prop(settings, "use_default_normalization")
-
-                box.separator()
-
-                col = box.column()
-                row = col.row()
-                row.prop(settings, "use_default_mask")
-
-                sub = col.column(align=True)
-                sub.prop(settings, "default_correlation_min")
-                sub.prop(settings, "default_frames_limit")
-                sub.prop(settings, "default_margin")
+            col.label("Select two markers to show distance.")
 
 
 class ExportTrackingPanel(bpy.types.Panel):
@@ -212,47 +121,66 @@ class ExportTrackingPanel(bpy.types.Panel):
         row.label(text="Merge:")
         row.operator("clip.join_tracks", text="Join Tracks")
 
+
 class ExportDataPanel(bpy.types.Panel):
-    bl_label = "Export"
+    bl_label = 'Export'
     bl_space_type = 'CLIP_EDITOR'
     bl_region_type = 'TOOLS'
-    bl_category = "Tracking and Export"
+    bl_category = 'Tracking and Export'
 
     # In andere Klasse kopieren
     bl_options = {'DEFAULT_CLOSED'}
 
     bpy.types.Scene.exp_path = StringProperty(
-        name = "Export Path",
-        description = "Path where data will be exported to",
-        default = "//export",
-        subtype = 'DIR_PATH')
+        name="Export Path",
+        description="Path where data will be exported to",
+        default="//",
+        subtype='DIR_PATH')
     bpy.types.Scene.exp_subdirs = BoolProperty(
-        name = "Export Subdirectories",
-        description = "Markers will be exported to subdirectories",
-        default = False)
+        name="Export Subdirectories",
+        description="Markers will be exported to subdirectories",
+        default=False)
     bpy.types.Scene.exp_logfile = BoolProperty(
-        name = "Write Logfile",
-        description = "Write logfile into export folder",
-        default = False)
+        name="Write Logfile",
+        description="Write logfile into export folder",
+        default=False)
 
     def draw(self, context):
         layout = self.layout
 
-        col = layout.column(align = True)
+        col = layout.column(align=True)
         col.label("Export Path:")
-        col.prop(context.scene, "exp_path", text = "")
+        col.prop(context.scene, "exp_path", text="")
         col.separator()
         col.prop(context.scene, "exp_subdirs")
         col.prop(context.scene, "exp_logfile")
         col.separator()
         col.prop(context.scene, "frame_start")
         col.prop(context.scene, "frame_end")
+        col.operator("scene.fullcliprange")
         col.separator()
-        col.label("Export:")
-        row = col.row(align = True)
-        row.operator("scene.export_marker",
-            text = "Selected").selected_only = True
-        row.operator("scene.export_marker", text = "All")
+        col.label("Export markers:")
+        row = col.row(align=True)
+        row.operator("scene.export_marker", text="Selected").selected_only = True
+        row.operator("scene.export_marker", text="All")
+
+
+class FullClipRangeOperator(bpy.types.Operator):
+    """Select the whole frame range of the current clip"""
+    bl_idname = "scene.fullcliprange"
+    bl_label = "All frames"
+
+    def execute(self, context):
+        clip = bpy.data.movieclips[context.space_data.clip.name]
+
+        context.scene.frame_start = clip.frame_start
+        context.scene.frame_end = clip.frame_start + clip.frame_duration
+
+        return {'FINISHED'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.clip
 
 
 class ExportOperator(bpy.types.Operator):
@@ -261,9 +189,9 @@ class ExportOperator(bpy.types.Operator):
     bl_label = "Export Tracking Markers"
 
     selected_only = BoolProperty(
-        name = "Selected Only",
-        description = "Export selected markers only",
-        default = False)
+        name="Selected Only",
+        description="Export selected markers only",
+        default=False)
 
     def execute(self, context):
         log = context.scene.exp_logfile
@@ -272,13 +200,15 @@ class ExportOperator(bpy.types.Operator):
         f_start = context.scene.frame_start
         f_end = context.scene.frame_end
 
-        if not os.path.exists(path): os.makedirs(path)
+        if not os.path.exists(path):
+            os.makedirs(path)
 
         import time
         time_start = time.time()
 
+        print("Writing log to {}.".format(os.path.join(path + "log.txt")))
         if log:
-            log_file = open(path + "log.txt", "w")
+            log_file = open(os.path.join(path, "log.txt"), "w")
             log_file.write("Starting Export\n")
             log_file.write("Export path: {0}\n".format(path))
             log_file.write("Exporting from scene {0}\n".format(context.scene.name))
@@ -297,7 +227,8 @@ class ExportOperator(bpy.types.Operator):
             y_size = clip.size[1]
 
             if log:
-                log_file.write("Starting movieclip {0} ({1} x {2} pixels)\n".format(clip.name, x_size, y_size))
+                log_file.write("Starting movieclip {0} ({1} x {2} pixels)\n".format(
+                    clip.name, x_size, y_size))
 
             if self.selected_only:
                 tracks = [track for track in clip.tracking.tracks if track.select]
@@ -309,13 +240,17 @@ class ExportOperator(bpy.types.Operator):
                     log_file.write("  Track {0} started ...\n".format(track.name))
 
                 if not subdirs:
-                    export_file = open(path + "{0}_{1}.csv".format(clip.name.split(".")[0], track.name), 'w')
+                    f_path = os.path.join(path, "{0}_{1}.csv".format(
+                        clip.name.split(".")[0], track.name))
                 else:
-                    subpath = path + "\\{0}\\".format(clip.name)
+                    subpath = os.path.join(path, "{0}/".format(clip.name))
                     if not os.path.exists(subpath):
                         os.makedirs(subpath)
-                    export_file = open(subpath + "{0}_{1}.csv".format(clip.name.split(".")[0], track.name), 'w')
+                    f_path = os.path.join(subpath, "{0}_{1}.csv".format(
+                        clip.name.split(".")[0], track.name))
 
+                print("Writing clip to {}.".format(f_path))
+                export_file = open(f_path, 'w')
                 export_file.write("frame;x;y\n")
                 success = True
                 i = f_start
@@ -333,11 +268,12 @@ class ExportOperator(bpy.types.Operator):
 
                 export_file.close()
                 if log:
-                    log_file.write("  Finished Track {0} {1}...\n".format(track.name,
-                        "successfully" if success else "with errors"))
+                    log_file.write("  Finished Track {0} {1}...\n".format(
+                        track.name, "successfully" if success else "with errors"))
 
             if log:
-                log_file.write("Finished movieclip {0} in {1:.4f} s\n\n".format(clip.name, time.time() - time_start))
+                log_file.write("Finished movieclip {0} in {1:.4f} s\n\n".format(
+                    clip.name, time.time() - time_start))
 
         if log:
             log_file.write("-----------------------------------------------------------\n")
@@ -354,17 +290,19 @@ class ExportOperator(bpy.types.Operator):
 
 def register():
     bpy.utils.register_class(ExportOperator)
-    bpy.utils.register_class(MarkerPanel)
+    bpy.utils.register_class(ExportMarkerPanel)
+    bpy.utils.register_class(FullClipRangeOperator)
     bpy.utils.register_class(ExportTrackingPanel)
     bpy.utils.register_class(ExportDataPanel)
-    bpy.utils.register_class(InitialisationPanel)
+
 
 def unregister():
     bpy.utils.unregister_class(ExportOperator)
-    bpy.utils.unregister_class(MarkerPanel)
+    bpy.utils.unregister_class(ExportMarkerPanel)
+    bpy.utils.unregister_class(FullClipRangeOperator)
     bpy.utils.unregister_class(ExportTrackingPanel)
     bpy.utils.unregister_class(ExportDataPanel)
-    bpy.utils.unregister_class(InitialisationPanel)
+
 
 if __name__ == "__main__":
     register()
