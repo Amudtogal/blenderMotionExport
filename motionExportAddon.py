@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
 # Blender Motion Tracking Addon 1.1
-# Â© Simon Reichel 24/02/2020
+# © Simon Reichel 24/02/2020
+# updated for Blender Version 2.80 by J.S. 20.01.2020
 
 import os
 import numpy as np
@@ -15,7 +16,7 @@ bl_info = {
     "description": "Use motion tracking data for scientific projects.",
     "author": "Simon Reichel",
     "version": (1, 1, 0),
-    "blender": (2, 79, 0),
+    "blender": (2, 80, 0)
     "location": "This addon adds a new tab to the movie clip editor.",
     "warning": "",
     "wiki_url": "",
@@ -40,7 +41,7 @@ class ExportMarkerPanel(bpy.types.Panel):
         row.operator("clip.add_marker_at_click", text="Add")
         row.operator("clip.delete_track", text="Delete")
         col.separator()
-        if clip.tracking.tracks.active:
+        if clip and clip.tracking.tracks.active:
             col.prop(clip.tracking.tracks.active, 'name')
 
         selected = []
@@ -62,10 +63,10 @@ class ExportMarkerPanel(bpy.types.Panel):
             x = (active_marker.co.x - other_marker.co.x) * x_size
             y = (active_marker.co.y - other_marker.co.y) * y_size
             fulldistance = np.sqrt(x ** 2 + y ** 2)
-            col.label("Marker distance:")
-            col.label("{0:.2f} ({1:.2f}, {2:.2f})".format(fulldistance, x, y))
+            col.label(text="Marker distance:")
+            col.label(text="{0:.2f} ({1:.2f}, {2:.2f})".format(fulldistance, x, y))
         else:
-            col.label("Select two markers to show distance.")
+            col.label(text="Select two markers to show distance.")
 
 
 class ExportTrackingPanel(bpy.types.Panel):
@@ -149,7 +150,7 @@ class ExportDataPanel(bpy.types.Panel):
         layout = self.layout
 
         col = layout.column(align=True)
-        col.label("Export Path:")
+        col.label(text="Export Path:")
         col.prop(context.scene, "exp_path", text="")
         col.separator()
         col.prop(context.scene, "exp_subdirs")
@@ -159,7 +160,7 @@ class ExportDataPanel(bpy.types.Panel):
         col.prop(context.scene, "frame_end")
         col.operator("scene.fullcliprange")
         col.separator()
-        col.label("Export markers:")
+        col.label(text="Export markers:")
         row = col.row(align=True)
         row.operator("scene.export_marker", text="Selected").selected_only = True
         row.operator("scene.export_marker", text="All")
@@ -288,20 +289,13 @@ class ExportOperator(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def register():
-    bpy.utils.register_class(ExportOperator)
-    bpy.utils.register_class(ExportMarkerPanel)
-    bpy.utils.register_class(FullClipRangeOperator)
-    bpy.utils.register_class(ExportTrackingPanel)
-    bpy.utils.register_class(ExportDataPanel)
-
-
-def unregister():
-    bpy.utils.unregister_class(ExportOperator)
-    bpy.utils.unregister_class(ExportMarkerPanel)
-    bpy.utils.unregister_class(FullClipRangeOperator)
-    bpy.utils.unregister_class(ExportTrackingPanel)
-    bpy.utils.unregister_class(ExportDataPanel)
+classes = (
+    ExportOperator,
+    FullClipRangeOperator,
+    ExportMarkerPanel,
+    ExportTrackingPanel,
+    ExportDataPanel)
+register, unregister = bpy.utils.register_classes_factory(classes)
 
 
 if __name__ == "__main__":
