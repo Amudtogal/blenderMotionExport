@@ -16,7 +16,7 @@ bl_info = {
     "description": "Use motion tracking data for scientific projects.",
     "author": "Simon Reichel",
     "version": (1, 1, 0),
-    "blender": (2, 80, 0)
+    "blender": (2, 80, 0),
     "location": "This addon adds a new tab to the movie clip editor.",
     "warning": "",
     "wiki_url": "",
