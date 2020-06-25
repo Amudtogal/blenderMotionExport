@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Blender Motion Tracking Addon 1.1
-# © Simon Reichel 24/02/2020
+# Simon Reichel 24/02/2020
 # updated for Blender Version 2.80 by J.S. 20.01.2020
 
 import os
@@ -21,7 +21,7 @@ bl_info = {
     "warning": "",
     "wiki_url": "",
     "support": "COMMUNITY",
-    "tracker_url": "https://github.com/BiYonic/blenderMotionExport/issues",
+    "tracker_url": "https://github.com/BiYonic/blenderMotionExport/issues"
 }
 
 
