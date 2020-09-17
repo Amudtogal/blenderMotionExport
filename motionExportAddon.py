@@ -22,7 +22,7 @@ bl_info = {
     "warning": "",
     "wiki_url": "",
     "support": "COMMUNITY",
-    "tracker_url": "https://github.com/BiYonic/blenderMotionExport/issues"
+    "tracker_url": "https://github.com/Amudtogal/blenderMotionExport/issues"
 }
 
 
