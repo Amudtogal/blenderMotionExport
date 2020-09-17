@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Blender Motion Tracking Addon 1.1
+# Blender Motion Tracking Addon 1.2
 # Simon Reichel 24/02/2020
 # updated for Blender Version 2.80 by J.S. 20.01.2020
 
@@ -9,13 +9,14 @@ import numpy as np
 import bpy
 from bpy.props import BoolProperty as BoolProperty
 from bpy.props import StringProperty as StringProperty
+from bpy.props import IntProperty as IntProperty
 
 bl_info = {
     "name": "Export Motion Tracking Data",
     "category": "Import-Export",
     "description": "Use motion tracking data for scientific projects.",
     "author": "Simon Reichel",
-    "version": (1, 1, 0),
+    "version": (1, 2, 3),
     "blender": (2, 80, 0),
     "location": "This addon adds a new tab to the movie clip editor.",
     "warning": "",
@@ -145,6 +146,13 @@ class ExportDataPanel(bpy.types.Panel):
         name="Write Logfile",
         description="Write logfile into export folder",
         default=False)
+    bpy.types.Scene.exp_digits = IntProperty(
+        name="Export Digits",
+        description="How many pixel digits you want to export",
+        max=4,
+        min=0,
+        default=1
+    )
 
     def draw(self, context):
         layout = self.layout
@@ -155,6 +163,7 @@ class ExportDataPanel(bpy.types.Panel):
         col.separator()
         col.prop(context.scene, "exp_subdirs")
         col.prop(context.scene, "exp_logfile")
+        col.prop(context.scene, "exp_digits")
         col.separator()
         col.prop(context.scene, "frame_start")
         col.prop(context.scene, "frame_end")
@@ -198,6 +207,7 @@ class ExportOperator(bpy.types.Operator):
         log = context.scene.exp_logfile
         path = bpy.path.abspath(context.scene.exp_path)
         subdirs = context.scene.exp_subdirs
+        ndigits = context.scene.exp_digits
         f_start = context.scene.frame_start
         f_end = context.scene.frame_end
 
@@ -258,8 +268,10 @@ class ExportOperator(bpy.types.Operator):
                 while i <= f_end:
                     marker = track.markers.find_frame(i)
                     if marker:
-                        marker_x = round(marker.co.x * x_size)
-                        marker_y = round(marker.co.y * y_size)
+                        marker_x = round(marker.co.x * x_size, ndigits=ndigits if ndigits > 0 else
+                                         None)
+                        marker_y = round(marker.co.y * y_size, ndigits=ndigits if ndigits > 0 else
+                                         None)
                         export_file.write("{0};{1};{2}\n".format(i, marker_x, marker_y))
                     else:
                         if log:
